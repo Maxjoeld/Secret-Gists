@@ -6,10 +6,10 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'maxjoeld'; // TODO: Replace with your username
 const github = octokit({ debug: true });
 const server = express();
-
+let keypair;
 // Create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
@@ -20,8 +20,10 @@ github.authenticate({
   token: process.env.GITHUB_TOKEN
 });
 
-// TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-
+// TODO:  Attempt to load the key from config.json.  If it is not found,
+// create a new 32 byte key.
+const secretKey = nacl.randomBytes(32);
+console.log(secretKey);
 
 server.get('/', (req, res) => {
   // Return a response that documents the other routes/operations available
@@ -107,6 +109,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -171,4 +174,7 @@ Still want to write code? Some possibilities:
 -Let the user pass in their private key via POST
 */
 
-server.listen(3000);
+server.listen(3000, () => {
+  console.log('server is locked and loaded baby');
+});
+
