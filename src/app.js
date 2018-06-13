@@ -21,6 +21,14 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found,
+
+//Step 1: create config.json (not in code if we dont want to)
+
+//Step 2: Try to load variable from the file
+
+//Step 3: If that doesn't work catch the pieces and make a new key and save the key to config.json 
+
+
 // create a new 32 byte key.
 const secretKey = nacl.randomBytes(32);
 console.log(secretKey);
@@ -109,7 +117,7 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
-  
+  res.send(nacl.util.encodeBase64(secretKey));
 });
 
 server.get('/setkey:keyString', (req, res) => {
@@ -125,6 +133,12 @@ server.get('/setkey:keyString', (req, res) => {
 
 server.get('/fetchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const { id } = req.query;
+  github.gists.get({ id })
+  .then(result => {
+    res.json(result);
+  })
+  .catch(err => console.log(err));
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
@@ -143,6 +157,22 @@ server.post('/create', urlencodedParser, (req, res) => {
 server.post('/createsecret', urlencodedParser, (req, res) => {
   // TODO:  Create a private and encrypted gist with given name/content
   // NOTE - we're only encrypting the content, not the filename
+  let { name, content } = req.body;
+  // Javascript uses utf16 in the background but basically everything
+  // string wise is UTF8 
+  // TODO: Encrypt contemt here 
+  const nonce = nacl.randomBytes(24); // investigate why this is 24
+  const encryptedMessage = nacl.secretbox(nacl.util.decodeUTF8(content), nonce, secretKey);
+  content = nacl.util.encodeBase64(nonce) + nacl.util.encodeBase64(encryptedMessage);
+  const files = { [name]: { content } };
+
+  github.gists.create({ files, public: false })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 server.post('/postmessageforfriend', urlencodedParser, (req, res) => {
